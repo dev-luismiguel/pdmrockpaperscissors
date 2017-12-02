@@ -52,8 +52,10 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
 
         singlePlayer = intent.getBooleanExtra("singlePlayer", true)
 
-        if (singlePlayer)
+        if (singlePlayer){
+            playerTwoName = "CPU"
             labelPlayerTwoNameScore.text = "CPU"
+        }
 
         val playerOneAlert = AlertDialog.Builder(this@GameActivity).create()
         playerOneAlert.setTitle("Player #1 Name")
@@ -105,12 +107,16 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
             playerTwoAlert.show()
             imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0)
         }
+        else {
+            checkIfHaveMatch()
+        }
     }
 
     private fun setPlayerTwoName(){
         imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0)
         playerTwoName = inputPlayerTwoName.text.toString()
         labelPlayerTwoNameScore.text = playerTwoName
+        checkIfHaveMatch()
     }
 
     private fun chooseRock() {
@@ -133,6 +139,10 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
         if (playerOneChoice == null){
             playerOneChoice = choiceId
             changeWhoPlaying()
+
+            imagePlayerOneSelected.setImageDrawable(getImageById(3))
+            imagePlayerTwoSelected.setImageDrawable(getImageById(3))
+            imageWinner.setImageDrawable(getImageById(3))
         }
         else if (playerTwoChoice == null)
             playerTwoChoice = choiceId
@@ -161,12 +171,50 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
+    private fun checkIfHaveMatch(){
+        var match = handler.getMatch(playerOneName, playerTwoName)
+        if (match != null){
+
+            val resumeMatchAlert = AlertDialog.Builder(this@GameActivity).create()
+            resumeMatchAlert.setTitle("Retomar")
+            resumeMatchAlert.setMessage("Deseja retomar o plancar anterior entre esses dois players ou iniciar uma nova rodada?")
+            resumeMatchAlert.setButton(AlertDialog.BUTTON_NEGATIVE, "Nova", {
+                dialogInterface, i -> deleteMatch()
+            })
+
+            resumeMatchAlert.setButton(AlertDialog.BUTTON_POSITIVE, "Retomar", {
+                dialogInterface, i -> resumeMatch(match)
+            })
+
+            resumeMatchAlert.show()
+        }
+        else{
+            insertMatch()
+        }
+    }
+
+    private fun deleteMatch() {
+        handler.deleteMatch(playerOneName, playerTwoName)
+        insertMatch()
+    }
+
+    private fun resumeMatch(match: Match){
+        winsPlayerOne = match.Player1Wins
+        labelPlayerOneScore.text = winsPlayerOne.toString()
+        winsPlayerTwo = match.Player2Wins
+        labelPlayerTwoScore.text = winsPlayerTwo.toString()
+    }
+
+    private fun insertMatch(){
+        handler.insertMatch(playerOneName, 0, playerTwoName, 0)
+    }
+
     private fun getImageById(id: Int): Drawable {
-        when (id){
-            0 -> return resources.getDrawable(R.drawable.pedra)
-            1 -> return resources.getDrawable(R.drawable.papel)
-            2 -> return resources.getDrawable(R.drawable.tesoura)
-            else -> return resources.getDrawable(R.drawable.padrao)
+        return when (id){
+            0 -> resources.getDrawable(R.drawable.pedra)
+            1 -> resources.getDrawable(R.drawable.papel)
+            2 -> resources.getDrawable(R.drawable.tesoura)
+            else -> resources.getDrawable(R.drawable.padrao)
         }
     }
 

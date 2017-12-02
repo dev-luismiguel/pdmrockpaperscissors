@@ -17,20 +17,31 @@ class SQLiteHandler (context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     fun updateMatch(player1Name: String, player2Name: String, player1Wins: Int, player2Wins: Int) {
         val db = writableDatabase
-        db.execSQL("UPDATE Match SET Player1Wins = '$player1Wins' AND Player2Wins = '$player2Wins' WHERE Player1Name = '$player1Name' AND Player2Name = '$player2Name' ", null)
+        db.execSQL("UPDATE Match SET Player1Wins = $player1Wins, Player2Wins = $player2Wins WHERE Player1Name = '$player1Name' AND Player2Name = '$player2Name' ")
     }
 
-    fun getMatch(player1Name: String, player2Name: String): Match {
+    fun getMatch(player1Name: String, player2Name: String): Match? {
         val db = readableDatabase
         var c = db.rawQuery("SELECT * FROM Match WHERE Player1Name = '$player1Name' AND Player2Name = '$player2Name'", null)
 
-        var match = Match(c.getLong(c.getColumnIndex("Id")),
-                          c.getString(c.getColumnIndex("Player1Name")),
-                          c.getInt(c.getColumnIndex("Player1Wins")),
-                          c.getString(c.getColumnIndex("Player2Name")),
-                          c.getInt(c.getColumnIndex("Player2Wins")))
+        if (c.count > 0) {
+            c.moveToFirst()
 
-        return match
+            var match = Match(c.getLong(c.getColumnIndex("Id")),
+                    c.getString(c.getColumnIndex("Player1Name")),
+                    c.getInt(c.getColumnIndex("Player1Wins")),
+                    c.getString(c.getColumnIndex("Player2Name")),
+                    c.getInt(c.getColumnIndex("Player2Wins")))
+
+            return match
+        } else {
+            return null
+        }
+    }
+
+    fun deleteMatch(player1Name: String, player2Name: String){
+        val db = writableDatabase
+        db.execSQL("DELETE FROM Match WHERE Player1Name = '$player1Name' AND Player2Name = '$player2Name'")
     }
 
     fun insertMatch(player1Name: String, player1Wins: Int, player2Name: String, player2Wins: Int){
