@@ -7,10 +7,8 @@ import android.os.Bundle
 import android.support.v7.app.AlertDialog
 import android.view.View
 import android.widget.EditText
-import android.widget.Toast
 import android.view.inputmethod.InputMethodManager
-import android.widget.ImageView
-import android.widget.TextView
+import kotlinx.android.synthetic.main.activity_game.*
 import java.util.*
 
 class GameActivity : AppCompatActivity(), View.OnClickListener {
@@ -18,17 +16,6 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
     lateinit private var imm: InputMethodManager
     lateinit private var inputPlayerOneName: EditText
     lateinit private var inputPlayerTwoName: EditText
-    lateinit private var labelPlayerOneNameScore: TextView
-    lateinit private var labelPlayerTwoNameScore: TextView
-    lateinit private var labelPlayerOneScore: TextView
-    lateinit private var labelPlayerTwoScore: TextView
-    lateinit private var imageChoiceRock: ImageView
-    lateinit private var imageChoicePaper: ImageView
-    lateinit private var imageChoiceScissors: ImageView
-    lateinit private var labelWhoPlaying: TextView
-    lateinit private var imagePlayerOneSelected: ImageView
-    lateinit private var imagePlayerTwoSelected: ImageView
-    lateinit private var imageWinner: ImageView
 
     private val ROCK_ID = 0
     private val PAPER_ID = 1
@@ -47,6 +34,8 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
 
     private var singlePlayer = true
 
+    lateinit private var handler : SQLiteHandler
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_game)
@@ -54,22 +43,12 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
         imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         inputPlayerOneName = EditText(this)
         inputPlayerTwoName = EditText(this)
-        labelPlayerOneNameScore = findViewById(R.id.labelPlayerOneNameScore)
-        labelPlayerTwoNameScore = findViewById(R.id.labelPlayerTwoNameScore)
-        labelPlayerOneScore = findViewById(R.id.labelPlayerOneScore)
-        labelPlayerTwoScore = findViewById(R.id.labelPlayerTwoScore)
-        imageChoiceRock = findViewById(R.id.imageChoiceRock)
-        imageChoicePaper = findViewById(R.id.imageChoicePaper)
-        imageChoiceScissors = findViewById(R.id.imageChoiceScissors)
-        labelWhoPlaying = findViewById(R.id.labelWhoPlaying)
-        imagePlayerOneSelected = findViewById(R.id.imagePlayerOneSelected)
-        imagePlayerTwoSelected = findViewById(R.id.imagePlayerTwoSelected)
-        imageWinner = findViewById(R.id.imageWinner)
 
         imageChoiceRock.setOnClickListener(this)
         imageChoicePaper.setOnClickListener(this)
         imageChoiceScissors.setOnClickListener(this)
 
+        handler = SQLiteHandler(this@GameActivity)
 
         singlePlayer = intent.getBooleanExtra("singlePlayer", true)
 
@@ -135,7 +114,7 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun chooseRock() {
-        Toast.makeText(this, "ROCK BABY!", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(this, "ROCK BABY!", Toast.LENGTH_SHORT).show()
         choose(ROCK_ID)
     }
 
@@ -163,7 +142,7 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
             imagePlayerOneSelected.setImageDrawable(getImageById(playerOneChoice?:0))
             imagePlayerTwoSelected.setImageDrawable(getImageById(playerTwoChoice?:0))
 
-            setImageWinner()
+            getMatch()
 
             playerOneChoice = null
             playerTwoChoice = null
@@ -191,7 +170,7 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
-    private fun setImageWinner(){
+    private fun getMatch(){
         // Player #1 winner
         if ((playerOneChoice == ROCK_ID     && playerTwoChoice == SCISSORS_ID) ||
             (playerOneChoice == PAPER_ID    && playerTwoChoice == ROCK_ID)     ||
@@ -218,6 +197,8 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
             imageWinner.setImageDrawable(getImageById(3))
 
         }
+
+        handler.updateMatch(playerOneName, playerTwoName, winsPlayerOne, winsPlayerTwo)
     }
 
 }

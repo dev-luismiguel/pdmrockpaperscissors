@@ -4,21 +4,14 @@ import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
-import android.widget.Button
+import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
-
-    lateinit var buttonSinglePlayer: Button
-    lateinit var buttonMultiPlayer: Button
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        buttonSinglePlayer = findViewById(R.id.buttonSinglePlayer)
         buttonSinglePlayer.setOnClickListener(this)
-
-        buttonMultiPlayer = findViewById(R.id.buttonMultiPlayer)
         buttonMultiPlayer.setOnClickListener(this)
     }
 
