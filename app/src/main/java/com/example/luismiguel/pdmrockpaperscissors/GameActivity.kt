@@ -1,15 +1,24 @@
 package com.example.luismiguel.pdmrockpaperscissors
 
+import android.app.ProgressDialog
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.drawable.Drawable
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.v4.content.LocalBroadcastManager
 import android.support.v7.app.AlertDialog
 import android.view.View
 import android.widget.EditText
 import android.view.inputmethod.InputMethodManager
 import kotlinx.android.synthetic.main.activity_game.*
 import java.util.*
+import android.text.InputFilter
+import android.widget.Toast
+import java.nio.charset.Charset
+
 
 class GameActivity : AppCompatActivity(), View.OnClickListener {
 
@@ -21,10 +30,11 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
     private val PAPER_ID = 1
     private val SCISSORS_ID = 2
 
-    private var playerPlaying = 0
+    private var playerPlaying = ""
 
     private var playerOneName = ""
     private var playerTwoName = ""
+    private var myPlayerName = ""
 
     private var playerOneChoice: Int? = null
     private var playerTwoChoice: Int? = null
@@ -33,6 +43,8 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
     private var winsPlayerTwo = 0
 
     private var singlePlayer = true
+    private var isBluetooth = false
+    private var isProvider = false
 
     lateinit private var handler : SQLiteHandler
 
@@ -40,9 +52,16 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_game)
 
+
         imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val maxLength = 10
+        val fArray = arrayOfNulls<InputFilter>(1)
+        fArray[0] = InputFilter.LengthFilter(maxLength)
         inputPlayerOneName = EditText(this)
+        inputPlayerOneName.filters = fArray
         inputPlayerTwoName = EditText(this)
+        inputPlayerTwoName.filters = fArray
+
 
         imageChoiceRock.setOnClickListener(this)
         imageChoicePaper.setOnClickListener(this)
@@ -51,6 +70,14 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
         handler = SQLiteHandler(this@GameActivity)
 
         singlePlayer = intent.getBooleanExtra("singlePlayer", true)
+        isBluetooth = intent.getBooleanExtra("isBluetooth", false)
+        isProvider = intent.getBooleanExtra("isProvider", false)
+
+        if (isBluetooth){
+            LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, IntentFilter("incomingMessageIntent"))
+        }
+
+        Toast.makeText(this, "Bluetooth: $isBluetooth", Toast.LENGTH_SHORT).show()
 
         if (singlePlayer){
             playerTwoName = "CPU"
@@ -58,7 +85,7 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
         }
 
         val playerOneAlert = AlertDialog.Builder(this@GameActivity).create()
-        playerOneAlert.setTitle("Player #1 Name")
+        playerOneAlert.setTitle(if (isBluetooth) "Player name" else "Player #1 Name")
         playerOneAlert.setView(inputPlayerOneName)
 
         playerOneAlert.setButton(AlertDialog.BUTTON_NEGATIVE, "CANCEL", {
@@ -87,10 +114,19 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun setPlayerOneName(){
+        if (isBluetooth){
+            imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0)
+            myPlayerName = inputPlayerOneName.text.toString()
+            sendMessage("PlayerName", inputPlayerOneName.text.toString())
+            setNames(inputPlayerOneName.text.toString())
+            return
+        }
+
         imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0)
         playerOneName = inputPlayerOneName.text.toString()
         labelPlayerOneNameScore.text = playerOneName
         labelWhoPlaying.text = playerOneName
+        playerPlaying = playerOneName
 
         if (!singlePlayer){
             val playerTwoAlert = AlertDialog.Builder(this@GameActivity).create()
@@ -121,20 +157,37 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
 
     private fun chooseRock() {
 //        Toast.makeText(this, "ROCK BABY!", Toast.LENGTH_SHORT).show()
+        if (isBluetooth && playerPlaying != myPlayerName) {
+            Toast.makeText(this, "Ainda não é a sua vez!", Toast.LENGTH_SHORT).show()
+            return
+        }
         choose(ROCK_ID)
     }
 
     private fun choosePaper(){
+        if (isBluetooth && playerPlaying != myPlayerName) {
+            Toast.makeText(this, "Ainda não é a sua vez!", Toast.LENGTH_SHORT).show()
+            return
+        }
         choose(PAPER_ID)
     }
 
     private fun chooseScissors(){
+        if (isBluetooth && playerPlaying != myPlayerName) {
+            Toast.makeText(this, "Ainda não é a sua vez!", Toast.LENGTH_SHORT).show()
+            return
+        }
         choose(SCISSORS_ID)
     }
 
-    private fun choose(choiceId: Int) {
+    private fun choose(choiceId: Int, isBluetoothReceive: Boolean = false) {
         if (singlePlayer)
             playerTwoChoice = Random().nextInt(3)
+
+        if (isBluetooth) {
+            if (!isBluetoothReceive)
+                sendMessage("Choose", choiceId.toString())
+        }
 
         if (playerOneChoice == null){
             playerOneChoice = choiceId
@@ -161,12 +214,12 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun changeWhoPlaying(){
-        if (playerPlaying == 0) {
-            playerPlaying = 1
+        if (playerPlaying == playerOneName) {
+            playerPlaying = playerTwoName
             labelWhoPlaying.text = playerTwoName
         }
         else {
-            playerPlaying = 0
+            playerPlaying = playerOneName
             labelWhoPlaying.text = playerOneName
         }
     }
@@ -249,4 +302,42 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
         handler.updateMatch(playerOneName, playerTwoName, winsPlayerOne, winsPlayerTwo)
     }
 
+
+    private fun setNames(name: String) {
+        if (playerOneName == ""){
+            playerOneName = name
+        }
+        else {
+            playerTwoName = name
+            checkIfHaveMatch()
+        }
+
+        labelPlayerOneNameScore.text = playerOneName
+        labelPlayerTwoNameScore.text = playerTwoName
+
+        labelWhoPlaying.text = playerOneName
+        playerPlaying = playerOneName
+    }
+
+
+    private val mReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            var text = intent.getStringExtra("theMessage")
+
+            var type = text.split("-")[0]
+            var message = text.split("-")[1]
+
+//            Toast.makeText(context, "$type -> $message", Toast.LENGTH_LONG).show()
+
+            when (type){
+                "PlayerName" -> setNames(message)
+                "Choose" -> choose(message.toInt(), true)
+            }
+        }
+    }
+
+    private fun sendMessage(type:String, message: String) {
+        val bytes = (type + "-" + message).toByteArray(Charset.defaultCharset())
+        BluetoothManagement.mBluetoothConnection.write(bytes)
+    }
 }
