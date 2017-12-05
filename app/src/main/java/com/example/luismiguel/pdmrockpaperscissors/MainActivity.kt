@@ -33,9 +33,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     private lateinit var mBluetoothAdapter: BluetoothAdapter
     private lateinit var mBluetoothDevice : BluetoothDevice
-//    private lateinit var mBluetoothConnection: BluetoothConnectionService
-
-    private lateinit var mBluetoothManagement: BluetoothManagement
 
     private var hisMAC = ""
     private var MY_UUID_INSECURE = UUID.fromString("8d3e8f01-3ae9-46d0-97d4-5836237a90ef")
@@ -46,22 +43,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         buttonSinglePlayer.setOnClickListener(this)
         buttonMultiPlayer.setOnClickListener(this)
-        // button.setOnClickListener(this)
-        button2.setOnClickListener(this)
     }
 
     override fun onClick(view: View?) {
         when(view?.id){
             R.id.buttonSinglePlayer -> callSingleActivity()
             R.id.buttonMultiPlayer -> multiPlayerClick()
-            // R.id.button -> sendMessage()
-            R.id.button2 -> sendMessage2()
         }
-    }
-
-    private fun sendMessage2() {
-        val bytes = "AAAAAAAAAAAAAAAAAAAAAAA".toByteArray(Charset.defaultCharset())
-        BluetoothManagement.mBluetoothConnection.write(bytes)
     }
 
     private fun callSingleActivity() {
@@ -84,6 +72,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         })
 
         askBluetoothAlert.show()
+
+
     }
 
     private fun callLocalMultiActivity() {
@@ -143,15 +133,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     mBluetoothDevice = mBluetoothAdapter.getRemoteDevice(hisMAC)
                     Log.d(TAG, "Trying to pair with " + mBluetoothDevice.name)
                     mBluetoothDevice.createBond()
-
                     BluetoothManagement.mBluetoothConnection = BluetoothConnectionService(this)
 
-//                    mBluetoothConnection = BluetoothConnectionService(this)
                     val filter = IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
                     registerReceiver(mBroadcastReceiver4, filter)
                     LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, IntentFilter("incomingMessageIntent"))
 
-                    // mBluetoothConnection.start()
                     askServerOrClientBluetooth()
                 } else {
                     Toast.makeText(this, "Falha ao conectar", Toast.LENGTH_SHORT).show()
@@ -201,7 +188,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val mReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             var text = intent.getStringExtra("theMessage")
-            Toast.makeText(context, text, Toast.LENGTH_LONG).show()
+            //Toast.makeText(context, text, Toast.LENGTH_LONG).show()
         }
     }
 

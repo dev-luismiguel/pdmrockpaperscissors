@@ -77,7 +77,7 @@ class GameActivity : AppCompatActivity(), View.OnClickListener {
             LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, IntentFilter("incomingMessageIntent"))
         }
 
-        Toast.makeText(this, "Bluetooth: $isBluetooth", Toast.LENGTH_SHORT).show()
+        // Toast.makeText(this, "Bluetooth: $isBluetooth", Toast.LENGTH_SHORT).show()
 
         if (singlePlayer){
             playerTwoName = "CPU"
